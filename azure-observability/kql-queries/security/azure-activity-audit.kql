@@ -1,0 +1,42 @@
+// =============================================================
+// Azure Activity and Audit Log Queries
+// =============================================================
+
+// --- Failed administrative operations (last 24 hours) ---
+AzureActivity
+| where TimeGenerated > ago(24h)
+| where CategoryValue == "Administrative"
+| where ActivityStatusValue in ("Failed", "Failure")
+| project TimeGenerated, OperationNameValue, ActivityStatusValue, Caller, ResourceGroup, ResourceId
+| sort by TimeGenerated desc
+
+// --- Resource deletions (last 7 days) ---
+AzureActivity
+| where TimeGenerated > ago(7d)
+| where OperationNameValue endswith "delete"
+| where ActivityStatusValue == "Success"
+| project TimeGenerated, OperationNameValue, Caller, ResourceGroup, ResourceId
+| sort by TimeGenerated desc
+
+// --- Role assignment changes ---
+AzureActivity
+| where TimeGenerated > ago(7d)
+| where OperationNameValue has "roleAssignments"
+| project TimeGenerated, OperationNameValue, ActivityStatusValue, Caller, Properties
+| sort by TimeGenerated desc
+
+// --- Policy non-compliance events ---
+AzureActivity
+| where TimeGenerated > ago(7d)
+| where CategoryValue == "Policy"
+| where ActivityStatusValue != "Succeeded"
+| summarize Count = count() by OperationNameValue, ResourceGroup
+| sort by Count desc
+
+// --- Operations by caller identity (who did what) ---
+AzureActivity
+| where TimeGenerated > ago(24h)
+| where CategoryValue == "Administrative"
+| summarize OperationCount = count() by Caller, OperationNameValue
+| sort by OperationCount desc
+| take 50

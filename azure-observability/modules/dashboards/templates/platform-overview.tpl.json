@@ -1,0 +1,157 @@
+{
+  "lenses": {
+    "0": {
+      "order": 0,
+      "parts": {
+        "0": {
+          "position": { "x": 0, "y": 0, "colSpan": 6, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+            "inputs": [
+              {
+                "name": "resourceTypeMode",
+                "value": "workspace"
+              },
+              {
+                "name": "ComponentId",
+                "value": "${workspace_id}"
+              },
+              {
+                "name": "Query",
+                "value": "Heartbeat\n| summarize LastHeartbeat = max(TimeGenerated) by Computer\n| extend Status = iff(LastHeartbeat > ago(5m), 'Healthy', 'Unhealthy')\n| summarize Healthy = countif(Status == 'Healthy'), Unhealthy = countif(Status == 'Unhealthy')"
+              },
+              {
+                "name": "PartTitle",
+                "value": "Agent Health Overview"
+              },
+              {
+                "name": "Dimensions",
+                "value": { "xAxis": { "name": "Status" }, "yAxis": { "name": "Count" } }
+              },
+              {
+                "name": "VisualizationType",
+                "value": "piechart"
+              },
+              {
+                "name": "TimeRange",
+                "value": "PT1H"
+              }
+            ]
+          }
+        },
+        "1": {
+          "position": { "x": 6, "y": 0, "colSpan": 6, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+            "inputs": [
+              {
+                "name": "ComponentId",
+                "value": "${workspace_id}"
+              },
+              {
+                "name": "Query",
+                "value": "Perf\n| where ObjectName == 'Processor' and CounterName == '% Processor Time' and InstanceName == '_Total'\n| summarize AvgCPU = avg(CounterValue) by Computer, bin(TimeGenerated, 5m)\n| render timechart"
+              },
+              {
+                "name": "PartTitle",
+                "value": "CPU Utilization by Host"
+              },
+              {
+                "name": "VisualizationType",
+                "value": "linechart"
+              },
+              {
+                "name": "TimeRange",
+                "value": "PT4H"
+              }
+            ]
+          }
+        },
+        "2": {
+          "position": { "x": 0, "y": 4, "colSpan": 6, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+            "inputs": [
+              {
+                "name": "ComponentId",
+                "value": "${workspace_id}"
+              },
+              {
+                "name": "Query",
+                "value": "Perf\n| where ObjectName == 'Memory' and CounterName == '% Committed Bytes In Use'\n| summarize AvgMemory = avg(CounterValue) by Computer, bin(TimeGenerated, 5m)\n| render timechart"
+              },
+              {
+                "name": "PartTitle",
+                "value": "Memory Utilization by Host"
+              },
+              {
+                "name": "VisualizationType",
+                "value": "linechart"
+              },
+              {
+                "name": "TimeRange",
+                "value": "PT4H"
+              }
+            ]
+          }
+        },
+        "3": {
+          "position": { "x": 6, "y": 4, "colSpan": 6, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+            "inputs": [
+              {
+                "name": "ComponentId",
+                "value": "${workspace_id}"
+              },
+              {
+                "name": "Query",
+                "value": "Perf\n| where ObjectName == 'LogicalDisk' and CounterName == '% Free Space'\n| where InstanceName != '_Total'\n| summarize MinFreeSpace = min(CounterValue) by Computer, InstanceName\n| where MinFreeSpace < 20\n| sort by MinFreeSpace asc"
+              },
+              {
+                "name": "PartTitle",
+                "value": "Disks Below 20% Free Space"
+              },
+              {
+                "name": "VisualizationType",
+                "value": "table"
+              },
+              {
+                "name": "TimeRange",
+                "value": "PT1H"
+              }
+            ]
+          }
+        },
+        "4": {
+          "position": { "x": 0, "y": 8, "colSpan": 12, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+            "inputs": [
+              {
+                "name": "ComponentId",
+                "value": "${workspace_id}"
+              },
+              {
+                "name": "Query",
+                "value": "AzureActivity\n| where CategoryValue == 'Administrative'\n| where ActivityStatusValue == 'Failure' or ActivityStatusValue == 'Failed'\n| project TimeGenerated, OperationNameValue, ActivityStatusValue, Caller, ResourceGroup\n| sort by TimeGenerated desc\n| take 50"
+              },
+              {
+                "name": "PartTitle",
+                "value": "Recent Failed Azure Activity Operations"
+              },
+              {
+                "name": "VisualizationType",
+                "value": "table"
+              },
+              {
+                "name": "TimeRange",
+                "value": "P1D"
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
+}

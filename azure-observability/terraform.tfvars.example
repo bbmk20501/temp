@@ -1,0 +1,40 @@
+environment         = "dev"
+location            = "eastus2"
+resource_group_name = "rg-observability-dev"
+
+tags = {
+  project = "platform-observability"
+  owner   = "platform-engineering"
+}
+
+log_analytics_retention_days = 90
+log_analytics_daily_quota_gb = 5
+
+application_insights_configs = {
+  "api" = {
+    application_type    = "web"
+    sampling_percentage = 50
+  }
+  "frontend" = {
+    application_type    = "web"
+    sampling_percentage = 25
+  }
+}
+
+alert_email_receivers = [
+  {
+    name          = "platform-team"
+    email_address = "platform-team@example.com"
+  }
+]
+
+alert_webhook_receivers = []
+
+monitored_resource_ids = [
+  # "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Compute/virtualMachines/<vm>"
+  # "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Sql/servers/<server>/databases/<db>"
+]
+
+enable_network_watcher  = false
+nsg_ids                 = {}
+flow_log_retention_days = 30

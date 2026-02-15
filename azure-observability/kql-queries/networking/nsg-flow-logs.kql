@@ -1,0 +1,36 @@
+// =============================================================
+// NSG Flow Log Analysis Queries
+// =============================================================
+
+// --- Top denied flows by source IP (last 1 hour) ---
+AzureNetworkAnalytics_CL
+| where TimeGenerated > ago(1h)
+| where FlowStatus_s == "D"
+| summarize DeniedFlows = count() by SrcIP_s, DestIP_s, DestPort_d, L7Protocol_s
+| top 20 by DeniedFlows desc
+
+// --- Allowed vs Denied traffic volume over time ---
+AzureNetworkAnalytics_CL
+| where TimeGenerated > ago(24h)
+| summarize
+    AllowedFlows = countif(FlowStatus_s == "A"),
+    DeniedFlows = countif(FlowStatus_s == "D")
+    by bin(TimeGenerated, 1h)
+| render timechart
+
+// --- Top talkers by bytes transferred ---
+AzureNetworkAnalytics_CL
+| where TimeGenerated > ago(4h)
+| where FlowStatus_s == "A"
+| summarize TotalBytesSent = sum(BytesSrcToDest_d), TotalBytesReceived = sum(BytesDestToSrc_d) by SrcIP_s
+| extend TotalBytes = TotalBytesSent + TotalBytesReceived
+| top 10 by TotalBytes desc
+
+// --- Unusual destination ports (not in common set) ---
+let CommonPorts = dynamic([22, 80, 443, 3389, 1433, 3306, 5432, 6379, 8080, 8443]);
+AzureNetworkAnalytics_CL
+| where TimeGenerated > ago(1h)
+| where FlowStatus_s == "A"
+| where DestPort_d !in (CommonPorts)
+| summarize FlowCount = count() by DestPort_d, DestIP_s, L7Protocol_s
+| top 20 by FlowCount desc

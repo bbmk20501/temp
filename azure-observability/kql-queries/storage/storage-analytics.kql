@@ -1,0 +1,42 @@
+// =============================================================
+// Azure Storage Monitoring Queries
+// =============================================================
+
+// --- Storage account availability ---
+AzureMetrics
+| where TimeGenerated > ago(24h)
+| where ResourceProvider == "MICROSOFT.STORAGE"
+| where MetricName == "Availability"
+| summarize AvgAvailability = avg(Average) by Resource, bin(TimeGenerated, 1h)
+| where AvgAvailability < 100
+| render timechart
+
+// --- Storage latency (E2E and server) ---
+AzureMetrics
+| where TimeGenerated > ago(4h)
+| where ResourceProvider == "MICROSOFT.STORAGE"
+| where MetricName in ("SuccessE2ELatency", "SuccessServerLatency")
+| summarize AvgLatencyMs = avg(Average) by Resource, MetricName, bin(TimeGenerated, 5m)
+| render timechart
+
+// --- Storage transactions by response type ---
+AzureMetrics
+| where TimeGenerated > ago(24h)
+| where ResourceProvider == "MICROSOFT.STORAGE"
+| where MetricName == "Transactions"
+| summarize TotalTransactions = sum(Total) by Resource, bin(TimeGenerated, 1h)
+| render timechart
+
+// --- Storage throttling events ---
+StorageBlobLogs
+| where TimeGenerated > ago(24h)
+| where StatusCode == 503 or StatusCode == 429
+| summarize ThrottleCount = count() by AccountName, OperationName, bin(TimeGenerated, 1h)
+| sort by ThrottleCount desc
+
+// --- Anonymous access attempts ---
+StorageBlobLogs
+| where TimeGenerated > ago(7d)
+| where AuthenticationType == "anonymous"
+| summarize AnonymousRequests = count() by AccountName, Uri, CallerIpAddress
+| sort by AnonymousRequests desc

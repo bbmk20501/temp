@@ -1,0 +1,30 @@
+// =============================================================
+// Network Connectivity and Diagnostics Queries
+// =============================================================
+
+// --- Failed network connections from VMs ---
+VMConnection
+| where TimeGenerated > ago(1h)
+| where LinkState == "Failed"
+| summarize FailedConnections = count() by Computer, DestinationIp, DestinationPort
+| top 20 by FailedConnections desc
+
+// --- Outbound connection latency per VM ---
+VMConnection
+| where TimeGenerated > ago(4h)
+| where Direction == "outbound"
+| summarize AvgLatencyMs = avg(ResponseTimeMax) by Computer, bin(TimeGenerated, 5m)
+| render timechart
+
+// --- DNS resolution failures ---
+DnsEvents
+| where TimeGenerated > ago(1h)
+| where ResultCode != 0
+| summarize FailureCount = count() by Name, ClientIP, ResultCode
+| top 20 by FailureCount desc
+
+// --- Wire data — top protocols by volume ---
+WireData
+| where TimeGenerated > ago(4h)
+| summarize TotalBytes = sum(TotalBytes) by ApplicationProtocol, bin(TimeGenerated, 15m)
+| render timechart
