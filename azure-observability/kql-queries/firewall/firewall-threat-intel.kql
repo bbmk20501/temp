@@ -1,0 +1,40 @@
+// =============================================================
+// Azure Firewall — Threat Intelligence & IDPS
+// =============================================================
+
+// --- Threat Intelligence hits (last 24 hours) ---
+AZFWThreatIntel
+| where TimeGenerated > ago(24h)
+| project TimeGenerated, SourceIp, DestinationIp, DestinationPort, Protocol, ThreatDescription, Action
+| sort by TimeGenerated desc
+
+// --- Threat Intel hits by source IP ---
+AZFWThreatIntel
+| where TimeGenerated > ago(7d)
+| summarize ThreatHits = count() by SourceIp, ThreatDescription
+| sort by ThreatHits desc
+
+// --- Threat Intel hit trend over time ---
+AZFWThreatIntel
+| where TimeGenerated > ago(7d)
+| summarize ThreatHits = count() by bin(TimeGenerated, 1h)
+| render timechart
+
+// --- IDPS signature matches (last 24 hours) ---
+AZFWIdpsSignature
+| where TimeGenerated > ago(24h)
+| project TimeGenerated, SourceIp, DestinationIp, DestinationPort, SignatureId, Description, Severity, Action
+| sort by Severity asc, TimeGenerated desc
+
+// --- Top IDPS signatures by hit count ---
+AZFWIdpsSignature
+| where TimeGenerated > ago(7d)
+| summarize HitCount = count() by SignatureId, Description, Severity, Action
+| sort by HitCount desc
+| take 25
+
+// --- IDPS hits over time by severity ---
+AZFWIdpsSignature
+| where TimeGenerated > ago(7d)
+| summarize HitCount = count() by Severity, bin(TimeGenerated, 1h)
+| render timechart

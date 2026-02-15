@@ -3,7 +3,7 @@ locals {
   common_tags = merge(var.tags, {
     environment = var.environment
     managed_by  = "terraform"
-    component   = "platform-observability"
+    component   = "network-observability"
   })
 }
 
@@ -23,22 +23,6 @@ module "log_analytics" {
 }
 
 # -------------------------------------------------------
-# Application Insights — APM for applications
-# -------------------------------------------------------
-module "application_insights" {
-  source   = "./modules/application-insights"
-  for_each = var.application_insights_configs
-
-  name                = "appi-${local.name_prefix}-${each.key}"
-  resource_group_name = var.resource_group_name
-  location            = var.location
-  application_type    = each.value.application_type
-  workspace_id        = module.log_analytics.workspace_id
-  sampling_percentage = each.value.sampling_percentage
-  tags                = local.common_tags
-}
-
-# -------------------------------------------------------
 # Action Groups — notification routing
 # -------------------------------------------------------
 module "action_groups" {
@@ -52,7 +36,7 @@ module "action_groups" {
 }
 
 # -------------------------------------------------------
-# Alert Rules — platform health alerts
+# Alert Rules — networking health alerts
 # -------------------------------------------------------
 module "monitor_alerts" {
   source = "./modules/monitor-alerts"
@@ -67,14 +51,77 @@ module "monitor_alerts" {
 }
 
 # -------------------------------------------------------
-# Diagnostic Settings — route resource logs to workspace
+# Azure Firewall Diagnostics
 # -------------------------------------------------------
-module "diagnostic_settings" {
-  source   = "./modules/diagnostic-settings"
-  for_each = toset(var.monitored_resource_ids)
+module "firewall_diagnostics" {
+  source = "./modules/firewall-diagnostics"
+  count  = length(var.firewall_resource_ids) > 0 ? 1 : 0
 
-  target_resource_id = each.value
+  firewall_resource_ids = var.firewall_resource_ids
+  workspace_id          = module.log_analytics.workspace_id
+}
+
+# -------------------------------------------------------
+# Application Gateway Diagnostics
+# -------------------------------------------------------
+module "appgw_diagnostics" {
+  source = "./modules/appgw-diagnostics"
+  count  = length(var.appgw_resource_ids) > 0 ? 1 : 0
+
+  appgw_resource_ids = var.appgw_resource_ids
   workspace_id       = module.log_analytics.workspace_id
+}
+
+# -------------------------------------------------------
+# Load Balancer Diagnostics
+# -------------------------------------------------------
+module "lb_diagnostics" {
+  source = "./modules/lb-diagnostics"
+  count  = length(var.lb_resource_ids) > 0 ? 1 : 0
+
+  lb_resource_ids = var.lb_resource_ids
+  workspace_id    = module.log_analytics.workspace_id
+}
+
+# -------------------------------------------------------
+# DNS Diagnostics (Public + Private Zones + Resolver)
+# -------------------------------------------------------
+module "dns_diagnostics" {
+  source = "./modules/dns-diagnostics"
+  count  = (length(var.dns_public_zone_ids) + length(var.dns_private_zone_ids) + length(var.dns_resolver_ids)) > 0 ? 1 : 0
+
+  dns_public_zone_ids  = var.dns_public_zone_ids
+  dns_private_zone_ids = var.dns_private_zone_ids
+  dns_resolver_ids     = var.dns_resolver_ids
+  workspace_id         = module.log_analytics.workspace_id
+}
+
+# -------------------------------------------------------
+# ExpressRoute Diagnostics (Circuits + Gateways)
+# -------------------------------------------------------
+module "expressroute_diagnostics" {
+  source = "./modules/expressroute-diagnostics"
+  count  = (length(var.expressroute_circuit_ids) + length(var.expressroute_gateway_ids)) > 0 ? 1 : 0
+
+  expressroute_circuit_ids = var.expressroute_circuit_ids
+  expressroute_gateway_ids = var.expressroute_gateway_ids
+  workspace_id             = module.log_analytics.workspace_id
+}
+
+# -------------------------------------------------------
+# Network Watcher — NSG flow logs & traffic analytics
+# -------------------------------------------------------
+module "network_watcher" {
+  source = "./modules/network-watcher"
+  count  = var.enable_network_watcher ? 1 : 0
+
+  name_prefix             = local.name_prefix
+  resource_group_name     = var.resource_group_name
+  location                = var.location
+  workspace_id            = module.log_analytics.workspace_id
+  nsg_ids                 = var.nsg_ids
+  flow_log_retention_days = var.flow_log_retention_days
+  tags                    = local.common_tags
 }
 
 # -------------------------------------------------------
@@ -91,17 +138,12 @@ module "dashboards" {
 }
 
 # -------------------------------------------------------
-# Network Watcher — network diagnostics & flow logs
+# Generic Diagnostic Settings — catch-all for other resources
 # -------------------------------------------------------
-module "network_watcher" {
-  source = "./modules/network-watcher"
-  count  = var.enable_network_watcher ? 1 : 0
+module "diagnostic_settings" {
+  source   = "./modules/diagnostic-settings"
+  for_each = toset(var.monitored_resource_ids)
 
-  name_prefix            = local.name_prefix
-  resource_group_name    = var.resource_group_name
-  location               = var.location
-  workspace_id           = module.log_analytics.workspace_id
-  nsg_ids                = var.nsg_ids
-  flow_log_retention_days = var.flow_log_retention_days
-  tags                   = local.common_tags
+  target_resource_id = each.value
+  workspace_id       = module.log_analytics.workspace_id
 }

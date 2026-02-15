@@ -1,0 +1,44 @@
+// =============================================================
+// Azure Load Balancer — Health Probe & Availability
+// =============================================================
+
+// --- Health probe status per backend pool ---
+AzureMetrics
+| where TimeGenerated > ago(4h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "DipAvailability"
+| summarize AvgHealthPct = avg(Average) by Resource, bin(TimeGenerated, 5m)
+| render timechart
+
+// --- VIP availability (data path availability) ---
+AzureMetrics
+| where TimeGenerated > ago(4h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "VipAvailability"
+| summarize AvgAvailPct = avg(Average) by Resource, bin(TimeGenerated, 5m)
+| render timechart
+
+// --- Load Balancers with degraded health (<100% health probe) ---
+AzureMetrics
+| where TimeGenerated > ago(1h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "DipAvailability"
+| summarize AvgHealthPct = avg(Average) by Resource
+| where AvgHealthPct < 100
+| sort by AvgHealthPct asc
+
+// --- Health probe events from diagnostic logs ---
+AzureDiagnostics
+| where ResourceType == "LOADBALANCERS"
+| where Category == "LoadBalancerProbeHealthStatus"
+| where TimeGenerated > ago(4h)
+| project TimeGenerated, Resource, operationName_s, properties_s
+| sort by TimeGenerated desc
+
+// --- Load Balancer alert events ---
+AzureDiagnostics
+| where ResourceType == "LOADBALANCERS"
+| where Category == "LoadBalancerAlertEvent"
+| where TimeGenerated > ago(24h)
+| project TimeGenerated, Resource, operationName_s, properties_s
+| sort by TimeGenerated desc

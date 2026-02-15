@@ -1,0 +1,42 @@
+// =============================================================
+// Azure Firewall — Network Rule Log Analysis
+// =============================================================
+
+// --- Denied network-rule traffic (last 1 hour) ---
+AZFWNetworkRule
+| where TimeGenerated > ago(1h)
+| where Action == "Deny"
+| summarize DeniedFlows = count() by SourceIp, DestinationIp, DestinationPort, Protocol
+| top 25 by DeniedFlows desc
+
+// --- Allowed vs Denied network rule actions over time ---
+AZFWNetworkRule
+| where TimeGenerated > ago(24h)
+| summarize
+    Allowed = countif(Action == "Allow"),
+    Denied  = countif(Action == "Deny")
+    by bin(TimeGenerated, 1h)
+| render timechart
+
+// --- Top source IPs generating denied traffic ---
+AZFWNetworkRule
+| where TimeGenerated > ago(4h)
+| where Action == "Deny"
+| summarize DeniedCount = count() by SourceIp
+| top 10 by DeniedCount desc
+| render barchart
+
+// --- Unusual destination ports (not in standard set) ---
+let StandardPorts = dynamic([22, 53, 80, 443, 3389, 1433, 5432, 8080, 8443]);
+AZFWNetworkRule
+| where TimeGenerated > ago(1h)
+| where Action == "Allow"
+| where toint(DestinationPort) !in (StandardPorts)
+| summarize FlowCount = count() by DestinationPort, DestinationIp, Protocol
+| top 25 by FlowCount desc
+
+// --- Network rule hits per rule collection (last 24h) ---
+AZFWNetworkRule
+| where TimeGenerated > ago(24h)
+| summarize HitCount = count() by Policy, RuleCollectionGroup, RuleCollection, Rule, Action
+| sort by HitCount desc

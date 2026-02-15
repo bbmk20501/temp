@@ -1,0 +1,47 @@
+// =============================================================
+// Azure DNS — Query Volume & Resolution Analytics
+// =============================================================
+
+// --- DNS query volume over time (public zones) ---
+AzureDiagnostics
+| where ResourceType == "DNSZONES"
+| where TimeGenerated > ago(24h)
+| summarize QueryCount = count() by Resource, bin(TimeGenerated, 1h)
+| render timechart
+
+// --- DNS record set count per zone (metric-based) ---
+AzureMetrics
+| where TimeGenerated > ago(1h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "RecordSetCount"
+| summarize LatestCount = max(Maximum) by Resource
+
+// --- Query volume by record type ---
+AzureDiagnostics
+| where ResourceType == "DNSZONES"
+| where TimeGenerated > ago(24h)
+| summarize QueryCount = count() by queryType_s
+| sort by QueryCount desc
+| render piechart
+
+// --- DNS query failures / NXDOMAIN responses ---
+AzureDiagnostics
+| where ResourceType == "DNSZONES"
+| where TimeGenerated > ago(24h)
+| where resultCode_s != "NOERROR"
+| summarize FailureCount = count() by resultCode_s, queryName_s
+| sort by FailureCount desc
+
+// --- Private DNS zone query volume ---
+AzureDiagnostics
+| where ResourceType == "PRIVATEDNSZONES"
+| where TimeGenerated > ago(24h)
+| summarize QueryCount = count() by Resource, bin(TimeGenerated, 1h)
+| render timechart
+
+// --- Private DNS zone virtual network link status ---
+AzureMetrics
+| where TimeGenerated > ago(1h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "VirtualNetworkLinkCount"
+| summarize LinkCount = max(Maximum) by Resource

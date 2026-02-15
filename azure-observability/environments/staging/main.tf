@@ -6,25 +6,13 @@ module "observability" {
   resource_group_name = "rg-observability-staging"
 
   tags = {
-    project = "platform-observability"
+    project = "network-observability"
     owner   = "platform-engineering"
   }
 
   # Log Analytics
   log_analytics_retention_days = 60
   log_analytics_daily_quota_gb = 10
-
-  # Application Insights
-  application_insights_configs = {
-    "api" = {
-      application_type    = "web"
-      sampling_percentage = 75
-    }
-    "frontend" = {
-      application_type    = "web"
-      sampling_percentage = 50
-    }
-  }
 
   # Alerts
   alert_email_receivers = [
@@ -36,11 +24,35 @@ module "observability" {
 
   alert_webhook_receivers = []
 
-  # Diagnostics
-  monitored_resource_ids = []
+  # Azure Firewall
+  firewall_resource_ids = {
+    # "staging-firewall" = "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Network/azureFirewalls/<name>"
+  }
 
-  # Network
+  # Application Gateway
+  appgw_resource_ids = {
+    # "staging-appgw" = "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Network/applicationGateways/<name>"
+  }
+
+  # Load Balancer
+  lb_resource_ids = {
+    # "staging-lb" = "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Network/loadBalancers/<name>"
+  }
+
+  # DNS
+  dns_public_zone_ids  = {}
+  dns_private_zone_ids = {}
+  dns_resolver_ids     = {}
+
+  # ExpressRoute
+  expressroute_circuit_ids = {}
+  expressroute_gateway_ids = {}
+
+  # Network Watcher
   enable_network_watcher  = false
   nsg_ids                 = {}
   flow_log_retention_days = 14
+
+  # Catch-all
+  monitored_resource_ids = []
 }

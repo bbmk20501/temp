@@ -1,0 +1,40 @@
+// =============================================================
+// Azure DNS Private Resolver — Query Analytics
+// =============================================================
+
+// --- Inbound endpoint query volume over time ---
+AzureDiagnostics
+| where ResourceType == "DNSRESOLVERS"
+| where TimeGenerated > ago(24h)
+| where Category == "DnsResolverQueryLog"
+| summarize QueryCount = count() by bin(TimeGenerated, 15m)
+| render timechart
+
+// --- Top queried domains through resolver ---
+AzureDiagnostics
+| where ResourceType == "DNSRESOLVERS"
+| where TimeGenerated > ago(4h)
+| summarize QueryCount = count() by queryName_s
+| top 25 by QueryCount desc
+
+// --- Failed resolutions through the resolver ---
+AzureDiagnostics
+| where ResourceType == "DNSRESOLVERS"
+| where TimeGenerated > ago(24h)
+| where responseCode_s != "NOERROR"
+| summarize FailCount = count() by queryName_s, responseCode_s, sourceIp_s
+| sort by FailCount desc
+
+// --- DNS Resolver query sources (which VMs/services are querying) ---
+AzureDiagnostics
+| where ResourceType == "DNSRESOLVERS"
+| where TimeGenerated > ago(4h)
+| summarize QueryCount = count() by sourceIp_s
+| top 10 by QueryCount desc
+
+// --- Forwarding rule hit rate ---
+AzureDiagnostics
+| where ResourceType == "DNSFORWARDINGRULESETS"
+| where TimeGenerated > ago(24h)
+| summarize HitCount = count() by forwardingRuleName_s, domainName_s
+| sort by HitCount desc

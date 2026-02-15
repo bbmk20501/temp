@@ -1,0 +1,38 @@
+// =============================================================
+// Azure Firewall — DNS Proxy Logs
+// =============================================================
+
+// --- DNS query volume over time ---
+AZFWDnsQuery
+| where TimeGenerated > ago(24h)
+| summarize QueryCount = count() by bin(TimeGenerated, 15m)
+| render timechart
+
+// --- Top queried domains ---
+AZFWDnsQuery
+| where TimeGenerated > ago(4h)
+| summarize QueryCount = count() by QueryName
+| top 25 by QueryCount desc
+
+// --- Failed DNS queries (NXDOMAIN, SERVFAIL, etc.) ---
+AZFWDnsQuery
+| where TimeGenerated > ago(4h)
+| where ResponseCode != "NOERROR"
+| summarize FailureCount = count() by QueryName, ResponseCode, SourceIp
+| sort by FailureCount desc
+
+// --- DNS query rate per source IP (detect chatty clients) ---
+AZFWDnsQuery
+| where TimeGenerated > ago(1h)
+| summarize QueryCount = count() by SourceIp
+| top 10 by QueryCount desc
+
+// --- DNS proxy latency distribution ---
+AZFWDnsQuery
+| where TimeGenerated > ago(4h)
+| summarize
+    P50 = percentile(ResponseDuration, 50),
+    P90 = percentile(ResponseDuration, 90),
+    P99 = percentile(ResponseDuration, 99)
+    by bin(TimeGenerated, 15m)
+| render timechart

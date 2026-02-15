@@ -1,0 +1,44 @@
+// =============================================================
+// Azure Firewall — Application Rule Log Analysis
+// =============================================================
+
+// --- Denied FQDN requests (last 1 hour) ---
+AZFWApplicationRule
+| where TimeGenerated > ago(1h)
+| where Action == "Deny"
+| summarize DeniedCount = count() by Fqdn, SourceIp, Protocol
+| top 25 by DeniedCount desc
+
+// --- Top allowed FQDNs by volume ---
+AZFWApplicationRule
+| where TimeGenerated > ago(4h)
+| where Action == "Allow"
+| summarize AllowedCount = count() by Fqdn
+| top 20 by AllowedCount desc
+| render barchart
+
+// --- Application rule hits over time by action ---
+AZFWApplicationRule
+| where TimeGenerated > ago(24h)
+| summarize
+    Allowed = countif(Action == "Allow"),
+    Denied  = countif(Action == "Deny")
+    by bin(TimeGenerated, 1h)
+| render timechart
+
+// --- Sources requesting denied FQDNs (potential misconfiguration or exfiltration) ---
+AZFWApplicationRule
+| where TimeGenerated > ago(4h)
+| where Action == "Deny"
+| summarize
+    DeniedFQDNs = make_set(Fqdn, 10),
+    DeniedCount = count()
+    by SourceIp
+| where DeniedCount > 20
+| sort by DeniedCount desc
+
+// --- Application rule hits per rule collection ---
+AZFWApplicationRule
+| where TimeGenerated > ago(24h)
+| summarize HitCount = count() by Policy, RuleCollectionGroup, RuleCollection, Rule, Action
+| sort by HitCount desc

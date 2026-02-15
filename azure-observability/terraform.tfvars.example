@@ -3,24 +3,14 @@ location            = "eastus2"
 resource_group_name = "rg-observability-dev"
 
 tags = {
-  project = "platform-observability"
+  project = "network-observability"
   owner   = "platform-engineering"
 }
 
 log_analytics_retention_days = 90
 log_analytics_daily_quota_gb = 5
 
-application_insights_configs = {
-  "api" = {
-    application_type    = "web"
-    sampling_percentage = 50
-  }
-  "frontend" = {
-    application_type    = "web"
-    sampling_percentage = 25
-  }
-}
-
+# Alert notification
 alert_email_receivers = [
   {
     name          = "platform-team"
@@ -30,11 +20,47 @@ alert_email_receivers = [
 
 alert_webhook_receivers = []
 
-monitored_resource_ids = [
-  # "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Compute/virtualMachines/<vm>"
-  # "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Sql/servers/<server>/databases/<db>"
-]
+# Azure Firewall
+firewall_resource_ids = {
+  # "hub-firewall" = "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Network/azureFirewalls/<name>"
+}
 
+# Application Gateway
+appgw_resource_ids = {
+  # "web-appgw" = "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Network/applicationGateways/<name>"
+}
+
+# Load Balancer
+lb_resource_ids = {
+  # "internal-lb" = "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Network/loadBalancers/<name>"
+}
+
+# DNS
+dns_public_zone_ids = {
+  # "example-com" = "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Network/dnsZones/example.com"
+}
+
+dns_private_zone_ids = {
+  # "internal" = "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Network/privateDnsZones/internal.example.com"
+}
+
+dns_resolver_ids = {
+  # "hub-resolver" = "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Network/dnsResolvers/<name>"
+}
+
+# ExpressRoute
+expressroute_circuit_ids = {
+  # "primary-circuit" = "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Network/expressRouteCircuits/<name>"
+}
+
+expressroute_gateway_ids = {
+  # "hub-ergw" = "/subscriptions/<sub>/resourceGroups/<rg>/providers/Microsoft.Network/virtualNetworkGateways/<name>"
+}
+
+# Network Watcher / NSG Flow Logs
 enable_network_watcher  = false
 nsg_ids                 = {}
 flow_log_retention_days = 30
+
+# Additional resources (catch-all)
+monitored_resource_ids = []

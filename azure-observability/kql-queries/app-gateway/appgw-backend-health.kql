@@ -1,0 +1,52 @@
+// =============================================================
+// Application Gateway — Backend Health & Performance
+// =============================================================
+
+// --- Backend health probe status ---
+AzureMetrics
+| where TimeGenerated > ago(4h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "HealthyHostCount" or MetricName == "UnhealthyHostCount"
+| summarize AvgCount = avg(Average) by Resource, MetricName, bin(TimeGenerated, 5m)
+| render timechart
+
+// --- Backend response latency (metric-based) ---
+AzureMetrics
+| where TimeGenerated > ago(4h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "BackendLastByteResponseTime"
+| summarize AvgLatencyMs = avg(Average) by Resource, bin(TimeGenerated, 5m)
+| render timechart
+
+// --- 502 Bad Gateway errors (backend connectivity issues) ---
+AzureDiagnostics
+| where ResourceType == "APPLICATIONGATEWAYS"
+| where Category == "ApplicationGatewayAccessLog"
+| where TimeGenerated > ago(24h)
+| where httpStatus_d == 502
+| summarize Count502 = count() by serverRouted_s, bin(TimeGenerated, 15m)
+| render timechart
+
+// --- Backend server distribution (load balance effectiveness) ---
+AzureDiagnostics
+| where ResourceType == "APPLICATIONGATEWAYS"
+| where Category == "ApplicationGatewayAccessLog"
+| where TimeGenerated > ago(1h)
+| summarize RequestCount = count() by serverRouted_s
+| render piechart
+
+// --- Connection failures per backend ---
+AzureMetrics
+| where TimeGenerated > ago(24h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "BackendConnectTime"
+| summarize AvgConnectMs = avg(Average), MaxConnectMs = max(Maximum) by Resource, bin(TimeGenerated, 15m)
+| render timechart
+
+// --- Current connections and capacity units ---
+AzureMetrics
+| where TimeGenerated > ago(4h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName in ("CurrentConnections", "CapacityUnits")
+| summarize AvgValue = avg(Average) by Resource, MetricName, bin(TimeGenerated, 5m)
+| render timechart

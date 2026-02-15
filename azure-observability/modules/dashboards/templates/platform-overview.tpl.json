@@ -8,34 +8,14 @@
           "metadata": {
             "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
             "inputs": [
-              {
-                "name": "resourceTypeMode",
-                "value": "workspace"
-              },
-              {
-                "name": "ComponentId",
-                "value": "${workspace_id}"
-              },
+              { "name": "ComponentId", "value": "${workspace_id}" },
               {
                 "name": "Query",
-                "value": "Heartbeat\n| summarize LastHeartbeat = max(TimeGenerated) by Computer\n| extend Status = iff(LastHeartbeat > ago(5m), 'Healthy', 'Unhealthy')\n| summarize Healthy = countif(Status == 'Healthy'), Unhealthy = countif(Status == 'Unhealthy')"
+                "value": "AzureMetrics\n| where ResourceProvider == 'MICROSOFT.NETWORK'\n| where MetricName == 'FirewallHealth'\n| summarize AvgHealth = avg(Average) by Resource, bin(TimeGenerated, 5m)\n| render timechart"
               },
-              {
-                "name": "PartTitle",
-                "value": "Agent Health Overview"
-              },
-              {
-                "name": "Dimensions",
-                "value": { "xAxis": { "name": "Status" }, "yAxis": { "name": "Count" } }
-              },
-              {
-                "name": "VisualizationType",
-                "value": "piechart"
-              },
-              {
-                "name": "TimeRange",
-                "value": "PT1H"
-              }
+              { "name": "PartTitle", "value": "Azure Firewall Health" },
+              { "name": "VisualizationType", "value": "linechart" },
+              { "name": "TimeRange", "value": "PT4H" }
             ]
           }
         },
@@ -44,26 +24,14 @@
           "metadata": {
             "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
             "inputs": [
-              {
-                "name": "ComponentId",
-                "value": "${workspace_id}"
-              },
+              { "name": "ComponentId", "value": "${workspace_id}" },
               {
                 "name": "Query",
-                "value": "Perf\n| where ObjectName == 'Processor' and CounterName == '% Processor Time' and InstanceName == '_Total'\n| summarize AvgCPU = avg(CounterValue) by Computer, bin(TimeGenerated, 5m)\n| render timechart"
+                "value": "AZFWNetworkRule\n| summarize Allowed = countif(Action == 'Allow'), Denied = countif(Action == 'Deny') by bin(TimeGenerated, 15m)\n| render timechart"
               },
-              {
-                "name": "PartTitle",
-                "value": "CPU Utilization by Host"
-              },
-              {
-                "name": "VisualizationType",
-                "value": "linechart"
-              },
-              {
-                "name": "TimeRange",
-                "value": "PT4H"
-              }
+              { "name": "PartTitle", "value": "Firewall Network Rules — Allow vs Deny" },
+              { "name": "VisualizationType", "value": "linechart" },
+              { "name": "TimeRange", "value": "PT4H" }
             ]
           }
         },
@@ -72,26 +40,14 @@
           "metadata": {
             "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
             "inputs": [
-              {
-                "name": "ComponentId",
-                "value": "${workspace_id}"
-              },
+              { "name": "ComponentId", "value": "${workspace_id}" },
               {
                 "name": "Query",
-                "value": "Perf\n| where ObjectName == 'Memory' and CounterName == '% Committed Bytes In Use'\n| summarize AvgMemory = avg(CounterValue) by Computer, bin(TimeGenerated, 5m)\n| render timechart"
+                "value": "AzureDiagnostics\n| where ResourceType == 'APPLICATIONGATEWAYS'\n| where Category == 'ApplicationGatewayAccessLog'\n| summarize TotalRequests = count(), ServerErrors = countif(httpStatus_d >= 500) by bin(TimeGenerated, 15m)\n| extend ErrorRatePct = round(ServerErrors * 100.0 / TotalRequests, 2)\n| render timechart"
               },
-              {
-                "name": "PartTitle",
-                "value": "Memory Utilization by Host"
-              },
-              {
-                "name": "VisualizationType",
-                "value": "linechart"
-              },
-              {
-                "name": "TimeRange",
-                "value": "PT4H"
-              }
+              { "name": "PartTitle", "value": "App Gateway — Request Volume & 5xx Error Rate" },
+              { "name": "VisualizationType", "value": "linechart" },
+              { "name": "TimeRange", "value": "PT4H" }
             ]
           }
         },
@@ -100,54 +56,110 @@
           "metadata": {
             "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
             "inputs": [
-              {
-                "name": "ComponentId",
-                "value": "${workspace_id}"
-              },
+              { "name": "ComponentId", "value": "${workspace_id}" },
               {
                 "name": "Query",
-                "value": "Perf\n| where ObjectName == 'LogicalDisk' and CounterName == '% Free Space'\n| where InstanceName != '_Total'\n| summarize MinFreeSpace = min(CounterValue) by Computer, InstanceName\n| where MinFreeSpace < 20\n| sort by MinFreeSpace asc"
+                "value": "AzureMetrics\n| where ResourceProvider == 'MICROSOFT.NETWORK'\n| where MetricName in ('HealthyHostCount', 'UnhealthyHostCount')\n| summarize AvgCount = avg(Average) by Resource, MetricName, bin(TimeGenerated, 5m)\n| render timechart"
               },
-              {
-                "name": "PartTitle",
-                "value": "Disks Below 20% Free Space"
-              },
-              {
-                "name": "VisualizationType",
-                "value": "table"
-              },
-              {
-                "name": "TimeRange",
-                "value": "PT1H"
-              }
+              { "name": "PartTitle", "value": "App Gateway — Backend Health" },
+              { "name": "VisualizationType", "value": "linechart" },
+              { "name": "TimeRange", "value": "PT4H" }
             ]
           }
         },
         "4": {
-          "position": { "x": 0, "y": 8, "colSpan": 12, "rowSpan": 4 },
+          "position": { "x": 0, "y": 8, "colSpan": 6, "rowSpan": 4 },
           "metadata": {
             "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
             "inputs": [
-              {
-                "name": "ComponentId",
-                "value": "${workspace_id}"
-              },
+              { "name": "ComponentId", "value": "${workspace_id}" },
               {
                 "name": "Query",
-                "value": "AzureActivity\n| where CategoryValue == 'Administrative'\n| where ActivityStatusValue == 'Failure' or ActivityStatusValue == 'Failed'\n| project TimeGenerated, OperationNameValue, ActivityStatusValue, Caller, ResourceGroup\n| sort by TimeGenerated desc\n| take 50"
+                "value": "AzureMetrics\n| where ResourceProvider == 'MICROSOFT.NETWORK'\n| where MetricName == 'DipAvailability'\n| summarize AvgHealthPct = avg(Average) by Resource, bin(TimeGenerated, 5m)\n| render timechart"
               },
+              { "name": "PartTitle", "value": "Load Balancer — Backend Health Probe" },
+              { "name": "VisualizationType", "value": "linechart" },
+              { "name": "TimeRange", "value": "PT4H" }
+            ]
+          }
+        },
+        "5": {
+          "position": { "x": 6, "y": 8, "colSpan": 6, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+            "inputs": [
+              { "name": "ComponentId", "value": "${workspace_id}" },
               {
-                "name": "PartTitle",
-                "value": "Recent Failed Azure Activity Operations"
+                "name": "Query",
+                "value": "AzureMetrics\n| where ResourceProvider == 'MICROSOFT.NETWORK'\n| where MetricName in ('AllocatedSnatPorts', 'UsedSnatPorts')\n| summarize AvgValue = avg(Average) by Resource, MetricName, bin(TimeGenerated, 5m)\n| render timechart"
               },
+              { "name": "PartTitle", "value": "Load Balancer — SNAT Port Usage" },
+              { "name": "VisualizationType", "value": "linechart" },
+              { "name": "TimeRange", "value": "PT4H" }
+            ]
+          }
+        },
+        "6": {
+          "position": { "x": 0, "y": 12, "colSpan": 6, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+            "inputs": [
+              { "name": "ComponentId", "value": "${workspace_id}" },
               {
-                "name": "VisualizationType",
-                "value": "table"
+                "name": "Query",
+                "value": "AzureMetrics\n| where ResourceProvider == 'MICROSOFT.NETWORK'\n| where MetricName in ('ArpAvailability', 'BgpAvailability')\n| summarize AvgPct = avg(Average) by Resource, MetricName, bin(TimeGenerated, 5m)\n| render timechart"
               },
+              { "name": "PartTitle", "value": "ExpressRoute — ARP & BGP Availability" },
+              { "name": "VisualizationType", "value": "linechart" },
+              { "name": "TimeRange", "value": "PT24H" }
+            ]
+          }
+        },
+        "7": {
+          "position": { "x": 6, "y": 12, "colSpan": 6, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+            "inputs": [
+              { "name": "ComponentId", "value": "${workspace_id}" },
               {
-                "name": "TimeRange",
-                "value": "P1D"
-              }
+                "name": "Query",
+                "value": "AzureMetrics\n| where ResourceProvider == 'MICROSOFT.NETWORK'\n| where MetricName in ('BitsInPerSecond', 'BitsOutPerSecond')\n| summarize AvgBps = avg(Average) by Resource, MetricName, bin(TimeGenerated, 5m)\n| extend AvgMbps = round(AvgBps / 1000000.0, 2)\n| project TimeGenerated, Resource, MetricName, AvgMbps\n| render timechart"
+              },
+              { "name": "PartTitle", "value": "ExpressRoute — Circuit Throughput (Mbps)" },
+              { "name": "VisualizationType", "value": "linechart" },
+              { "name": "TimeRange", "value": "PT4H" }
+            ]
+          }
+        },
+        "8": {
+          "position": { "x": 0, "y": 16, "colSpan": 6, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+            "inputs": [
+              { "name": "ComponentId", "value": "${workspace_id}" },
+              {
+                "name": "Query",
+                "value": "AZFWDnsQuery\n| summarize QueryCount = count() by bin(TimeGenerated, 15m)\n| render timechart"
+              },
+              { "name": "PartTitle", "value": "Firewall DNS Proxy — Query Volume" },
+              { "name": "VisualizationType", "value": "linechart" },
+              { "name": "TimeRange", "value": "PT4H" }
+            ]
+          }
+        },
+        "9": {
+          "position": { "x": 6, "y": 16, "colSpan": 6, "rowSpan": 4 },
+          "metadata": {
+            "type": "Extension/Microsoft_OperationsManagementSuite_Workspace/PartType/LogsDashboardPart",
+            "inputs": [
+              { "name": "ComponentId", "value": "${workspace_id}" },
+              {
+                "name": "Query",
+                "value": "AZFWThreatIntel\n| summarize ThreatHits = count() by bin(TimeGenerated, 1h)\n| render timechart"
+              },
+              { "name": "PartTitle", "value": "Firewall — Threat Intel Hits" },
+              { "name": "VisualizationType", "value": "barchart" },
+              { "name": "TimeRange", "value": "P7D" }
             ]
           }
         }

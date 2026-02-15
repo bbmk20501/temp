@@ -1,0 +1,55 @@
+// =============================================================
+// Application Gateway — WAF (Web Application Firewall) Logs
+// =============================================================
+
+// --- WAF blocked requests over time ---
+AzureDiagnostics
+| where ResourceType == "APPLICATIONGATEWAYS"
+| where Category == "ApplicationGatewayFirewallLog"
+| where TimeGenerated > ago(24h)
+| where action_s == "Blocked"
+| summarize BlockedCount = count() by bin(TimeGenerated, 1h)
+| render timechart
+
+// --- Top WAF rules triggered ---
+AzureDiagnostics
+| where ResourceType == "APPLICATIONGATEWAYS"
+| where Category == "ApplicationGatewayFirewallLog"
+| where TimeGenerated > ago(24h)
+| summarize HitCount = count() by ruleId_s, Message, action_s
+| sort by HitCount desc
+| take 25
+
+// --- Top attacking client IPs ---
+AzureDiagnostics
+| where ResourceType == "APPLICATIONGATEWAYS"
+| where Category == "ApplicationGatewayFirewallLog"
+| where TimeGenerated > ago(24h)
+| where action_s == "Blocked"
+| summarize BlockedCount = count() by clientIp_s
+| top 10 by BlockedCount desc
+
+// --- WAF actions breakdown (Blocked, Detected, Allowed) ---
+AzureDiagnostics
+| where ResourceType == "APPLICATIONGATEWAYS"
+| where Category == "ApplicationGatewayFirewallLog"
+| where TimeGenerated > ago(24h)
+| summarize Count = count() by action_s
+| render piechart
+
+// --- Targeted URIs by blocked requests ---
+AzureDiagnostics
+| where ResourceType == "APPLICATIONGATEWAYS"
+| where Category == "ApplicationGatewayFirewallLog"
+| where TimeGenerated > ago(24h)
+| where action_s == "Blocked"
+| summarize BlockedCount = count() by requestUri_s
+| top 20 by BlockedCount desc
+
+// --- WAF detections by OWASP rule group ---
+AzureDiagnostics
+| where ResourceType == "APPLICATIONGATEWAYS"
+| where Category == "ApplicationGatewayFirewallLog"
+| where TimeGenerated > ago(7d)
+| summarize HitCount = count() by ruleSetType_s, ruleGroup_s, action_s
+| sort by HitCount desc

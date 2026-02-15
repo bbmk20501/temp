@@ -1,0 +1,53 @@
+// =============================================================
+// ExpressRoute Gateway — Performance & Connectivity
+// =============================================================
+
+// --- Gateway CPU utilization ---
+AzureMetrics
+| where TimeGenerated > ago(4h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "ExpressRouteGatewayCpuUtilization"
+| summarize AvgCPU = avg(Average), MaxCPU = max(Maximum) by Resource, bin(TimeGenerated, 5m)
+| render timechart
+
+// --- Gateway bits per second (throughput) ---
+AzureMetrics
+| where TimeGenerated > ago(4h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "ExpressRouteGatewayBitsPerSecond"
+| summarize AvgBps = avg(Average) by Resource, bin(TimeGenerated, 5m)
+| extend AvgMbps = AvgBps / 1000000.0
+| project TimeGenerated, Resource, AvgMbps
+| render timechart
+
+// --- Gateway packets per second ---
+AzureMetrics
+| where TimeGenerated > ago(4h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "ExpressRouteGatewayPacketsPerSecond"
+| summarize AvgPPS = avg(Average) by Resource, bin(TimeGenerated, 5m)
+| render timechart
+
+// --- Number of routes advertised/learned per peering ---
+AzureMetrics
+| where TimeGenerated > ago(1h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName in ("ExpressRouteGatewayCountOfRoutesAdvertisedToPeer", "ExpressRouteGatewayCountOfRoutesLearnedFromPeer")
+| summarize LatestCount = max(Maximum) by Resource, MetricName
+
+// --- Active flows on the gateway ---
+AzureMetrics
+| where TimeGenerated > ago(4h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "ExpressRouteGatewayActiveFlows"
+| summarize AvgFlows = avg(Average) by Resource, bin(TimeGenerated, 5m)
+| render timechart
+
+// --- Gateway with high CPU (>80%) — scaling indicator ---
+AzureMetrics
+| where TimeGenerated > ago(1h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "ExpressRouteGatewayCpuUtilization"
+| summarize AvgCPU = avg(Average) by Resource
+| where AvgCPU > 80
+| sort by AvgCPU desc

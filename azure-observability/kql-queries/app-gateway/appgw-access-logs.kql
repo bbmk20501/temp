@@ -1,0 +1,59 @@
+// =============================================================
+// Application Gateway — Access Log Analysis
+// =============================================================
+
+// --- Request volume over time ---
+AzureDiagnostics
+| where ResourceType == "APPLICATIONGATEWAYS"
+| where Category == "ApplicationGatewayAccessLog"
+| where TimeGenerated > ago(24h)
+| summarize RequestCount = count() by bin(TimeGenerated, 15m)
+| render timechart
+
+// --- HTTP status code distribution ---
+AzureDiagnostics
+| where ResourceType == "APPLICATIONGATEWAYS"
+| where Category == "ApplicationGatewayAccessLog"
+| where TimeGenerated > ago(4h)
+| summarize Count = count() by httpStatus_d
+| sort by Count desc
+| render piechart
+
+// --- Error rate (4xx + 5xx) over time ---
+AzureDiagnostics
+| where ResourceType == "APPLICATIONGATEWAYS"
+| where Category == "ApplicationGatewayAccessLog"
+| where TimeGenerated > ago(24h)
+| summarize
+    TotalRequests = count(),
+    ClientErrors  = countif(httpStatus_d >= 400 and httpStatus_d < 500),
+    ServerErrors  = countif(httpStatus_d >= 500)
+    by bin(TimeGenerated, 15m)
+| extend ClientErrorRate = ClientErrors * 100.0 / TotalRequests
+| extend ServerErrorRate = ServerErrors * 100.0 / TotalRequests
+| render timechart
+
+// --- Slowest backend response times (P95) ---
+AzureDiagnostics
+| where ResourceType == "APPLICATIONGATEWAYS"
+| where Category == "ApplicationGatewayAccessLog"
+| where TimeGenerated > ago(4h)
+| where isnotempty(timeTaken_d)
+| summarize P95_ms = percentile(timeTaken_d * 1000, 95) by serverRouted_s, bin(TimeGenerated, 5m)
+| render timechart
+
+// --- Top client IPs by request volume ---
+AzureDiagnostics
+| where ResourceType == "APPLICATIONGATEWAYS"
+| where Category == "ApplicationGatewayAccessLog"
+| where TimeGenerated > ago(1h)
+| summarize RequestCount = count() by clientIP_s
+| top 20 by RequestCount desc
+
+// --- Requests by host header (virtual host) ---
+AzureDiagnostics
+| where ResourceType == "APPLICATIONGATEWAYS"
+| where Category == "ApplicationGatewayAccessLog"
+| where TimeGenerated > ago(4h)
+| summarize RequestCount = count() by host_s
+| sort by RequestCount desc

@@ -1,0 +1,55 @@
+// =============================================================
+// Azure Load Balancer — Traffic & Connection Metrics
+// =============================================================
+
+// --- Byte count through the load balancer over time ---
+AzureMetrics
+| where TimeGenerated > ago(24h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "ByteCount"
+| summarize TotalBytes = sum(Total) by Resource, bin(TimeGenerated, 15m)
+| extend TotalMB = TotalBytes / (1024.0 * 1024)
+| render timechart
+
+// --- Packet count over time ---
+AzureMetrics
+| where TimeGenerated > ago(24h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "PacketCount"
+| summarize TotalPackets = sum(Total) by Resource, bin(TimeGenerated, 15m)
+| render timechart
+
+// --- SYN count (new connections) over time ---
+AzureMetrics
+| where TimeGenerated > ago(4h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "SYNCount"
+| summarize TotalSYN = sum(Total) by Resource, bin(TimeGenerated, 5m)
+| render timechart
+
+// --- SNAT connection count (outbound) ---
+AzureMetrics
+| where TimeGenerated > ago(4h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "SnatConnectionCount"
+| summarize TotalSNAT = sum(Total) by Resource, bin(TimeGenerated, 5m)
+| render timechart
+
+// --- Allocated vs Used SNAT ports ---
+AzureMetrics
+| where TimeGenerated > ago(4h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName in ("AllocatedSnatPorts", "UsedSnatPorts")
+| summarize AvgValue = avg(Average) by Resource, MetricName, bin(TimeGenerated, 5m)
+| render timechart
+
+// --- SNAT port exhaustion risk (>80% used) ---
+AzureMetrics
+| where TimeGenerated > ago(1h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName in ("AllocatedSnatPorts", "UsedSnatPorts")
+| summarize AvgValue = avg(Average) by Resource, MetricName
+| evaluate pivot(MetricName, take_any(AvgValue))
+| extend UsedPct = UsedSnatPorts * 100.0 / AllocatedSnatPorts
+| where UsedPct > 80
+| sort by UsedPct desc

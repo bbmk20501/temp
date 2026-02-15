@@ -1,0 +1,55 @@
+// =============================================================
+// ExpressRoute Circuit — Availability & Performance
+// =============================================================
+
+// --- Circuit availability (ARP availability per peering) ---
+AzureMetrics
+| where TimeGenerated > ago(24h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "ArpAvailability"
+| summarize AvgAvailPct = avg(Average) by Resource, bin(TimeGenerated, 5m)
+| render timechart
+
+// --- BGP availability per peering ---
+AzureMetrics
+| where TimeGenerated > ago(24h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "BgpAvailability"
+| summarize AvgBgpPct = avg(Average) by Resource, bin(TimeGenerated, 5m)
+| render timechart
+
+// --- Bits in/out per second (circuit throughput) ---
+AzureMetrics
+| where TimeGenerated > ago(4h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName in ("BitsInPerSecond", "BitsOutPerSecond")
+| summarize AvgBps = avg(Average) by Resource, MetricName, bin(TimeGenerated, 5m)
+| extend AvgMbps = AvgBps / 1000000.0
+| project TimeGenerated, Resource, MetricName, AvgMbps
+| render timechart
+
+// --- Circuit utilization vs provisioned bandwidth ---
+// (Requires knowing provisioned bandwidth — compare AvgMbps above against the circuit SKU)
+AzureMetrics
+| where TimeGenerated > ago(1h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName in ("BitsInPerSecond", "BitsOutPerSecond")
+| summarize MaxBps = max(Maximum) by Resource, MetricName
+| extend MaxMbps = MaxBps / 1000000.0
+
+// --- Circuits with low availability (<99.9%) in last 24 hours ---
+AzureMetrics
+| where TimeGenerated > ago(24h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "ArpAvailability"
+| summarize AvgAvail = avg(Average) by Resource
+| where AvgAvail < 99.9
+| sort by AvgAvail asc
+
+// --- Peering route table changes ---
+AzureDiagnostics
+| where ResourceType == "EXPRESSROUTECIRCUITS"
+| where Category == "PeeringRouteLog"
+| where TimeGenerated > ago(24h)
+| project TimeGenerated, Resource, operationName_s, properties_s
+| sort by TimeGenerated desc

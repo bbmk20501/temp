@@ -1,0 +1,46 @@
+// =============================================================
+// Azure Firewall — SNAT Port Utilization & Throughput
+// =============================================================
+
+// --- SNAT port utilization (metric-based) ---
+AzureMetrics
+| where TimeGenerated > ago(4h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "SNATPortUtilization"
+| summarize AvgSNAT = avg(Average), MaxSNAT = max(Maximum) by Resource, bin(TimeGenerated, 5m)
+| render timechart
+
+// --- Firewall throughput over time ---
+AzureMetrics
+| where TimeGenerated > ago(4h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "Throughput"
+| summarize AvgThroughputBps = avg(Average) by Resource, bin(TimeGenerated, 5m)
+| extend AvgThroughputMbps = AvgThroughputBps / 1000000.0
+| project TimeGenerated, Resource, AvgThroughputMbps
+| render timechart
+
+// --- Firewall health state ---
+AzureMetrics
+| where TimeGenerated > ago(24h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "FirewallHealth"
+| summarize AvgHealth = avg(Average) by Resource, bin(TimeGenerated, 5m)
+| render timechart
+
+// --- Data processed (bytes) per firewall ---
+AzureMetrics
+| where TimeGenerated > ago(24h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "DataProcessed"
+| summarize TotalBytesProcessed = sum(Total) by Resource, bin(TimeGenerated, 1h)
+| extend TotalGB = TotalBytesProcessed / (1024.0 * 1024 * 1024)
+| render timechart
+
+// --- Active flow count ---
+AzureMetrics
+| where TimeGenerated > ago(4h)
+| where ResourceProvider == "MICROSOFT.NETWORK"
+| where MetricName == "ActiveFlowCount"
+| summarize AvgFlows = avg(Average), MaxFlows = max(Maximum) by Resource, bin(TimeGenerated, 5m)
+| render timechart
