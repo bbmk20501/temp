@@ -2,7 +2,7 @@
 
 **Presentation:** Monday 23 Nov 2026, afternoon
 **Prep window:** Fri evening → Sat → Sun → Mon morning
-**Format:** Slides + recorded video walkthroughs + live demo moments
+**Format:** Slides + pre-recorded video demos only (**no live demos**)
 
 ---
 
@@ -15,8 +15,8 @@ Every demo section follows the same beat so the audience learns the rhythm:
 | # | Section | Today (pain) | HARP approach | Demo | Mode |
 |---|---------|--------------|---------------|------|------|
 | 0 | Opening | — | What HARP is, why now, the 3 problems we'll fix | — | Slides |
-| 1 | **Application registration** | Cumbersome: forms, tickets, hand-offs, waits, duplicate data entry | Single self-service registration flow | Register an app end to end in HARP | Video + live |
-| 2 | **Deployment** | Manual / multi-team steps, inconsistent environments, slow lead time | Standardised, automated deployment from the registered app | Deploy the app just registered | Video + live |
+| 1 | **Application registration** | Cumbersome: forms, tickets, hand-offs, waits, duplicate data entry | Single self-service registration flow | Register an app end to end in HARP | Video |
+| 2 | **Deployment** | Manual / multi-team steps, inconsistent environments, slow lead time | Standardised, automated deployment from the registered app | Deploy the app just registered | Video |
 | 3 | **Day-2 management & lifecycle** | Ad-hoc changes, tickets for routine ops, no single view of app state | Vision: Day-2 actions (scale, restart, config change, patch, rotate secrets, decommission) + lifecycle view | Show what exists today; walk through the vision with mock-ups | Video + slides |
 | 4 | **Claim service** | (frame the gap it fills) | How we intend to build it, flow, ownership, timeline | Talk-through on slides/diagram (no live demo) | Slides |
 | 5 | Close | — | Recap, roadmap, asks / decisions needed | — | Slides + Q&A |
@@ -61,10 +61,12 @@ Every demo section follows the same beat so the audience learns the rhythm:
 - [ ] V3 — Day-2 actions on the deployed app (what's available today)
 - [ ] Optional V0 — 60-sec "today" montage showing the old process (tickets, forms) for contrast
 
-### Live demo
+### Recording setup (no live demo on the day)
 - [ ] Demo environment confirmed working, sample app name agreed
-- [ ] Pre-staged state: an app already registered + deployed (fallback if live run is slow)
-- [ ] Logins, tokens, browser tabs, zoom level, notifications off
+- [ ] Clean browser profile, zoom ~125%, notifications off, no secrets/tokens on screen
+- [ ] Record at 1080p; trim waits/spinners; add captions or callouts on key clicks
+- [ ] Narrate in the video, or keep silent and talk over it (decide before recording)
+- [ ] Export MP4, embed in slides **and** keep standalone copies locally
 
 ---
 
@@ -78,7 +80,7 @@ Every demo section follows the same beat so the audience learns the rhythm:
 
 ### Saturday — Build content
 - [ ] Morning: draft full slide outline + speaker notes skeleton
-- [ ] Afternoon: dry-run demos 1 & 2 in the environment; fix blockers
+- [ ] Afternoon: write click-by-click scripts for V1 & V2; dry-run in the environment; fix blockers
 - [ ] Evening: record V1 (registration) and V2 (deployment)
 
 ### Sunday — Day-2, Claim service, polish
@@ -88,7 +90,7 @@ Every demo section follows the same beat so the audience learns the rhythm:
 
 ### Monday morning — Rehearse & lock
 - [ ] Full timed rehearsal (ideally with one reviewer)
-- [ ] Re-test demo environment ~1–2 hrs before; reset to clean state
+- [ ] Test video playback on the actual presenting laptop / screen-share setup
 - [ ] Export slides to PDF + keep videos locally (no reliance on network)
 - [ ] Lock deck; no changes after ~1 hr before the session
 
@@ -98,10 +100,10 @@ Every demo section follows the same beat so the audience learns the rhythm:
 
 | Risk | Fallback |
 |------|----------|
-| Live demo env fails / slow | Switch to recorded video for that section |
 | Video won't play | Backup screenshot slides |
 | Feature not ready for Day-2 | Mock-ups framed explicitly as "vision" |
-| Over time | Cut live portion; videos are fixed length |
+| Over time | Trim talk-track; videos are fixed length |
+| Screen-share drops video frames / audio | Share the video file directly, or play from local player |
 
 ---
 
